@@ -14,7 +14,9 @@ function App() {
   
   useEffect(() => {
     const connectMetaMask = async () => {
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const data = await web3Provider.request({ method: 'eth_requestAccounts' });
+      console.log('[data]', data);
+
       const accounts = await web3Provider.request({ method: 'eth_accounts' });
       setSignedAccounts(accounts);
     }
@@ -81,7 +83,30 @@ function App() {
     const balanceAfter = await contract2.methods.balanceOf(signedAccounts[0]).call()
     console.log('[balanceAfter]', balanceAfter);
   }
-  
+
+  const signTransactionHandler = async () => {
+    web3Provider
+    .request({
+      method: 'wallet_requestPermissions',
+      params: [{ eth_accounts: {} }],
+    })
+    .then((permissions) => {
+      const accountsPermission = permissions.find(
+        (permission) => permission.parentCapability === 'eth_accounts'
+      );
+      if (accountsPermission) {
+        console.log('eth_accounts permission successfully requested!', accountsPermission);
+      }
+    })
+    .catch((error) => {
+      if (error.code === 4001) {
+        // EIP-1193 userRejectedRequest error
+        console.log('Permissions needed to continue.');
+      } else {
+        console.error(error);
+      }
+    });
+  }
 
   return (
     <div className="App">
@@ -93,6 +118,9 @@ function App() {
       </div>
       <div>
         <button onClick={testMultiTransactionHandler}>Multi Test2</button>
+      </div>
+      <div>
+        <button onClick={signTransactionHandler}>Sign Transaction</button>
       </div>
     </div>
   );
